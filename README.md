@@ -97,6 +97,30 @@ This model represents the EO (electro-optical) visual detection layer within a m
 | Fine-grained drone classification | Per-model labels (Mavic, Phantom, FPV, fixed-wing) | Planned |
 | Edge deployment | TensorRT INT8 export for NVIDIA Jetson | Planned |
 | Active learning | Deploy → collect failures → relabel → retrain cycle | Planned |
+## ONNX Export — Deployment Format
+
+The trained model was exported from PyTorch (`.pt`) to ONNX (`.onnx`) format to demonstrate the deployment pipeline toward edge/production targets.
+
+```python
+model = YOLO("best.pt")
+model.export(format="onnx")
+```
+
+| Format | File Size |
+|---|---|
+| PyTorch (.pt) | 6.2 MB |
+| ONNX (.onnx) | 12.3 MB |
+
+**Note on file size:** ONNX is larger than the PyTorch checkpoint because it embeds the full computational graph explicitly rather than relying on PyTorch's Python runtime to interpret the model — trading compactness for platform independence.
+
+**CPU inference benchmark (20-run average, same test image):**
+
+| Format | Avg Inference Time |
+|---|---|
+| PyTorch | 167.6 ms |
+| ONNX Runtime (CPU) | 242.5 ms |
+
+On generic CPU, ONNX Runtime was slower than native PyTorch for this model. This is an honest, expected result — ONNX's practical advantage isn't raw CPU speed, it's **platform portability**: `.onnx` files can be converted to TensorRT for NVIDIA Jetson (the target edge platform for aerostat/UAV deployment), run in a browser via ONNX Runtime Web, or deployed on mobile via CoreML/TFLite conversion — none of which support loading a raw PyTorch `.pt` file directly. The ONNX export is the necessary intermediate step toward `model.export(format='engine')` for actual Jetson TensorRT deployment.
 
 ## Files in this repo
 
